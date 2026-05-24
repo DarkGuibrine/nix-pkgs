@@ -1,40 +1,34 @@
-{
-  lib,
-  pkgs,
-  ...
-}:
+{ pkgs, ... }:
+
 pkgs.appimageTools.wrapType2 rec {
-  pname = "shiru";
-  version = "v6.6.0";
+  pname = "helium";
+  version = "0.12.4.1";
 
   src = pkgs.fetchurl {
-    url = "https://github.com/RockinChaos/Shiru/releases/download/${version}/linux-Shiru-${version}.AppImage";
-    hash = "sha256-Y7R8gKsPm7NmzKXC0C24KqY1s7boWal3w5Lin35eswk=";
+    url = "https://github.com/imputnet/helium-linux/releases/download/${version}/${pname}-${version}-x86_64.AppImage";
+    sha256 = "sha256-OgS8HkLBseFrEhNFJxMwp1bg0gzPdfY1VaySAAp7vq0=";
   };
-
-  nativeBuildInputs = with pkgs; [
-    makeWrapper
-  ];
 
   extraInstallCommands =
     let
-      contents = pkgs.appimageTools.extractType2 { inherit pname version src; };
+      contents = pkgs.appimageTools.extract { inherit pname version src; };
     in
     ''
-      mkdir -p "$out/share/applications"
-      mkdir -p "$out/share/lib/shiru"
-      cp -r ${contents}/{locales,resources} "$out/share/lib/shiru"
-      cp -r ${contents}/usr/share/* "$out/share"
-      cp "${contents}/${pname}.desktop" "$out/share/applications/"
-      wrapProgram $out/bin/shiru --add-flags "--ozone-platform=wayland"
-      substituteInPlace $out/share/applications/${pname}.desktop --replace-fail 'Exec=AppRun' 'Exec=${meta.mainProgram}'
+      mkdir -p $out/share/applications
+      cp ${contents}/${pname}.desktop $out/share/applications/${pname}.desktop
+      substituteInPlace $out/share/applications/${pname}.desktop \
+        --replace 'Exec=helium %U' 'Exec=helium' \
+        --replace 'Exec=helium --incognito' 'Exec=helium --incognito' \
+        --replace 'Exec=AppRun %U' 'Exec=helium' \
+        --replace 'Exec=AppRun' 'Exec=helium'
+      if [ -d "${contents}/usr/share/icons" ]; then
+        mkdir -p $out/share/icons
+        cp -r ${contents}/usr/share/icons/* $out/share/icons/
+      fi
     '';
 
-  meta = {
-    description = "Shiru - Torrent streaming made simple";
-    homepage = "https://github.com/RockinChaos/Shiru";
-    changelog = "https://github.com/RockinChaos/Shiru/releases";
-    license = lib.licenses.bsl11;
-    mainProgram = "shiru";
-  };
+  # garante integração correta com desktop
+  extraWrapProgramArgs = ''
+    --set DESKTOP_FILE_NAME helium.desktop
+  '';
 }
