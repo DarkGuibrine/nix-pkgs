@@ -14,7 +14,12 @@ pkgs.appimageTools.wrapType2 rec {
       contents = pkgs.appimageTools.extract { inherit pname version src; };
     in
     ''
-      install -m 444 -D ${contents}/${pname}.desktop -t $out/share/applications
-      cp -r ${contents}/usr/share/icons $out/share
+      if [ -f ${contents}/*.desktop ]; then
+        install -Dm444 ${contents}/*.desktop -t $out/share/applications
+      fi
+
+      if [ -d ${contents}/usr/share/icons ]; then
+        cp -r ${contents}/usr/share/icons $out/share
+      fi
     '';
 }

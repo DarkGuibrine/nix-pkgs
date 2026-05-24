@@ -1,8 +1,5 @@
-{
-  lib,
-  pkgs,
-  ...
-}:
+{ lib, pkgs, ... }:
+
 pkgs.appimageTools.wrapType2 rec {
   pname = "hayase";
   version = "6.4.67";
@@ -12,22 +9,36 @@ pkgs.appimageTools.wrapType2 rec {
     hash = "sha256-npUSNtiCKTcAK2nOta225W9+07Rsm235vsiAAAALVFU=";
   };
 
-  nativeBuildInputs = with pkgs; [
-    makeWrapper
+  makeWrapperArgs = [
+    "--add-flags"
+    "--ozone-platform=wayland"
   ];
 
   extraInstallCommands =
     let
-      contents = pkgs.appimageTools.extractType2 { inherit pname version src; };
+      contents = pkgs.appimageTools.extract { inherit pname version src; };
     in
     ''
       mkdir -p "$out/share/applications"
       mkdir -p "$out/share/lib/hayase"
-      cp -r ${contents}/{locales,resources} "$out/share/lib/hayase"
-      cp -r ${contents}/usr/share/* "$out/share"
-      cp "${contents}/${pname}.desktop" "$out/share/applications/"
-      wrapProgram $out/bin/hayase --add-flags "--ozone-platform=wayland"
-      substituteInPlace $out/share/applications/${pname}.desktop --replace-fail 'Exec=AppRun' 'Exec=${meta.mainProgram}'
+
+      if [ -d ${contents}/resources ]; then
+        cp -r ${contents}/resources "$out/share/lib/hayase/"
+      fi
+
+      if [ -d ${contents}/locales ]; then
+        cp -r ${contents}/locales "$out/share/lib/hayase/"
+      fi
+
+      if [ -d ${contents}/usr/share ]; then
+        cp -r ${contents}/usr/share/* "$out/share/"
+      fi
+
+      if [ -f ${contents}/*.desktop ]; then
+        install -Dm444 ${contents}/*.desktop "$out/share/applications/hayase.desktop"
+        substituteInPlace "$out/share/applications/hayase.desktop" \
+          --replace-fail 'Exec=AppRun' 'Exec=hayase'
+      fi
     '';
 
   meta = {

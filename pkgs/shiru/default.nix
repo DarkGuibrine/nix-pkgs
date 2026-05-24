@@ -1,8 +1,5 @@
-{
-  lib,
-  pkgs,
-  ...
-}:
+{ lib, pkgs, ... }:
+
 pkgs.appimageTools.wrapType2 rec {
   pname = "shiru";
   version = "v6.6.0";
@@ -12,22 +9,31 @@ pkgs.appimageTools.wrapType2 rec {
     hash = "sha256-Y7R8gKsPm7NmzKXC0C24KqY1s7boWal3w5Lin35eswk=";
   };
 
-  nativeBuildInputs = with pkgs; [
-    makeWrapper
-  ];
-
   extraInstallCommands =
     let
-      contents = pkgs.appimageTools.extractType2 { inherit pname version src; };
+      contents = pkgs.appimageTools.extract { inherit pname version src; };
     in
     ''
       mkdir -p "$out/share/applications"
       mkdir -p "$out/share/lib/shiru"
-      cp -r ${contents}/{locales,resources} "$out/share/lib/shiru"
-      cp -r ${contents}/usr/share/* "$out/share"
-      cp "${contents}/${pname}.desktop" "$out/share/applications/"
-      wrapProgram $out/bin/shiru --add-flags "--ozone-platform=wayland"
-      substituteInPlace $out/share/applications/${pname}.desktop --replace-fail 'Exec=AppRun' 'Exec=${meta.mainProgram}'
+
+      if [ -d ${contents}/resources ]; then
+        cp -r ${contents}/resources "$out/share/lib/shiru/"
+      fi
+
+      if [ -d ${contents}/locales ]; then
+        cp -r ${contents}/locales "$out/share/lib/shiru/"
+      fi
+
+      if [ -d ${contents}/usr/share ]; then
+        cp -r ${contents}/usr/share/* "$out/share/"
+      fi
+
+      if [ -f ${contents}/*.desktop ]; then
+        install -Dm444 ${contents}/*.desktop "$out/share/applications/shiru.desktop"
+        substituteInPlace "$out/share/applications/shiru.desktop" \
+          --replace-fail 'Exec=AppRun' 'Exec=shiru'
+      fi
     '';
 
   meta = {
