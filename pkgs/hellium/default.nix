@@ -27,48 +27,44 @@ pkgs.appimageTools.wrapType2 {
       nspr
       libdrm
       mesa
-      xorg.libX11
-      xorg.libxcb
-      xorg.libXcomposite
-      xorg.libXdamage
-      xorg.libXext
-      xorg.libXfixes
-      xorg.libXrandr
-      xorg.libXi
-      xorg.libXtst
-      xorg.libXScrnSaver
-      at-spi2-atk
+
+      libx11
+      libxcb
+      libxcomposite
+      libxdamage
+      libxext
+      libxfixes
+      libxrandr
+      libxi
+      libxtst
+      libxscrnsaver
+
       atk
+      at-spi2-atk
       cairo
       pango
       expat
       alsa-lib
     ];
 
-  nativeBuildInputs = with pkgs; [
-    makeWrapper
-  ];
-
   extraInstallCommands = ''
     mkdir -p $out/share/applications
     mkdir -p $out/share/icons
+    mkdir -p $out/share/pixmaps
 
-    install -Dm444 \
-      ${contents}/${pname}.desktop \
+    cp ${contents}/*.desktop \
       $out/share/applications/${pname}.desktop
 
-    substituteInPlace $out/share/applications/${pname}.desktop \
-      --replace-fail 'Exec=AppRun' 'Exec=$out/bin/${pname}'
+    desktop_file="$out/share/applications/${pname}.desktop"
+
+    sed -i "s|^Exec=.*|Exec=$out/bin/${pname}|g" "$desktop_file"
 
     if [ -d "${contents}/usr/share/icons" ]; then
-      cp -r ${contents}/usr/share/icons/* $out/share/icons/
+      cp -r ${contents}/usr/share/icons/* \
+        $out/share/icons/
     fi
 
-    if [ -f "${contents}/${pname}.png" ]; then
-      install -Dm444 \
-        ${contents}/${pname}.png \
-        $out/share/pixmaps/${pname}.png
-    fi
+    find ${contents} -iname "*.png" -exec cp {} $out/share/pixmaps/${pname}.png \; | head -n 1
   '';
 
   meta = with lib; {
